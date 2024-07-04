@@ -11,6 +11,7 @@ interface Props {
   isSubmitting: Todo | null;
   deletingTodo: number;
   currentTodos: number[];
+  handleEdit: (id: number, newTitle: string) => void;
 }
 
 export const TodoItem: React.FC<Props> = ({
@@ -22,7 +23,9 @@ export const TodoItem: React.FC<Props> = ({
   isSubmitting,
   deletingTodo,
   currentTodos,
+  handleEdit,
 }) => {
+  const [editTitle, setEditTitle] = useState(todoTitle);
   const [isEditing, setIsEditing] = useState(false);
 
   const id = currentTodos.find(currentId => currentId === todoId);
@@ -36,8 +39,12 @@ export const TodoItem: React.FC<Props> = ({
     setIsEditing(true);
   };
 
-  const handleEscape = (event: React.KeyboardEvent<HTMLInputElement>) => {
+  const handleKey = (event: React.KeyboardEvent<HTMLInputElement>) => {
     if (event.key === 'Escape') {
+      setIsEditing(false);
+    } else if (event.key === 'Enter') {
+      handleEdit(todoId, editTitle);
+
       setIsEditing(false);
     }
   };
@@ -47,6 +54,18 @@ export const TodoItem: React.FC<Props> = ({
       itemRef.current.focus();
     }
   }, [isEditing]);
+
+  function save() {
+    const trimmetTitle = editTitle.trim();
+
+    if (trimmetTitle === todoTitle) {
+      setIsEditing(false);
+    }
+
+    handleEdit(todoId, editTitle);
+
+    setIsEditing(false);
+  }
 
   return (
     <div
@@ -77,8 +96,10 @@ export const TodoItem: React.FC<Props> = ({
             id={`todo-${todoId}`}
             defaultValue={todoTitle}
             ref={itemRef}
-            onBlur={() => setIsEditing(false)}
-            onKeyUp={handleEscape}
+            onChange={event => setEditTitle(event.target.value)}
+            onBlur={save}
+            onKeyUp={handleKey}
+            onKeyDown={handleKey}
           />
         </form>
       ) : (
