@@ -1,7 +1,7 @@
 import cn from 'classnames';
 import { Todo } from '../types/Todo';
 import { USER_ID } from '../api/todos';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef } from 'react';
 
 interface Props {
   todos: Todo[];
@@ -22,19 +22,11 @@ export const Header: React.FC<Props> = ({
   isSubmitting,
   toggleAll,
 }) => {
-  const [isTogleAll, setIsToggleAll] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+  const isActive = todos.every(todo => todo.completed);
 
   const isClicked = () => {
     toggleAll();
-
-    const areAllCompleted = todos.every(todo => todo.completed);
-
-    if (areAllCompleted) {
-      setIsToggleAll(false);
-    } else {
-      setIsToggleAll(true);
-    }
   };
 
   useEffect(() => {
@@ -51,10 +43,12 @@ export const Header: React.FC<Props> = ({
 
   return (
     <header className="todoapp__header">
-      {todos && (
+      {!!todos.length && (
         <button
           type="button"
-          className={cn('todoapp__toggle-all', { active: isTogleAll })}
+          className={cn('todoapp__toggle-all', {
+            active: isActive,
+          })}
           data-cy="ToggleAllButton"
           onClick={isClicked}
         />

@@ -41,6 +41,8 @@ export const TodoItem: React.FC<Props> = ({
 
   const handleKey = (event: React.KeyboardEvent<HTMLInputElement>) => {
     if (event.key === 'Escape') {
+      handleEdit(todoId, editTitle);
+
       setIsEditing(false);
     } else if (event.key === 'Enter') {
       handleEdit(todoId, editTitle);
@@ -69,9 +71,11 @@ export const TodoItem: React.FC<Props> = ({
 
   return (
     <div
-      key={todoId}
       data-cy="Todo"
-      className={cn('todo', { completed: isCompleted })}
+      className={cn('todo', {
+        completed: isCompleted,
+        'temp-item-enter temp-item-enter-active': id === 0,
+      })}
       onDoubleClick={handleDoubleClick}
     >
       {/* eslint-disable-next-line jsx-a11y/label-has-associated-control */}

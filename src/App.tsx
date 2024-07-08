@@ -15,6 +15,7 @@ import { Header } from './components/Header';
 import { ErrorComponent } from './components/ErrorComponent';
 import { TodoItem } from './components/TodoItem';
 import { CSSTransition, TransitionGroup } from 'react-transition-group';
+import cn from 'classnames';
 
 export const App: React.FC = () => {
   const [todos, setTodos] = useState<Todo[]>([]);
@@ -23,7 +24,6 @@ export const App: React.FC = () => {
   const [selectedIdTodos, setSelectedIdTodos] = useState<number[]>([]);
 
   const [errorMessage, setErrorMessage] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
   const [todoId, setTodoId] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -37,7 +37,7 @@ export const App: React.FC = () => {
         setErrorMessage('Unable to load todos');
         setTimeout(() => setErrorMessage(''), 3000);
       })
-      .finally(() => setIsLoading(false));
+      .finally(() => setIsSubmitting(false));
   }, []);
 
   if (!USER_ID) {
@@ -104,12 +104,13 @@ export const App: React.FC = () => {
       todo.id === id ? { ...todo, completed: !todo.completed } : todo,
     );
 
+    const originalTodos = [...todos];
+
     const findTodo = createTodo.find(todo => todo.id === id);
 
     if (findTodo) {
       setTodos(createTodo);
       setSelectedIdTodos(currentId => [...currentId, id]);
-      setIsLoading(true);
 
       updateTodos(findTodo)
         .then(() => {
@@ -120,38 +121,49 @@ export const App: React.FC = () => {
         .catch(() => {
           setErrorMessage('Unable to update a todo');
           setTimeout(() => setErrorMessage(''), 3000);
+          setTodos(originalTodos);
         })
         .finally(() => {
-          setIsLoading(false);
           setSelectedIdTodos([]);
         });
     }
   };
 
   const toggleAll = () => {
-    const areAllCompleted = todos.every(todo => todo.completed);
+    if (todos.every(todo => todo.completed)) {
+      todos.forEach(todo => {
+        const updatedTodo = { ...todo, completed: false };
 
-    const toggleAllTodos = todos.map(todo => ({
-      ...todo,
-      completed: !areAllCompleted,
-    }));
+        updateTodos(updatedTodo)
+          .then(() => {
+            setTodos(prevTodos =>
+              prevTodos.map(t => (t.id === updatedTodo.id ? updatedTodo : t)),
+            );
+          })
+          .catch(() => {
+            setErrorMessage('Unable to toggle all items');
+            setTimeout(() => setErrorMessage(''), 3000);
+          });
+      });
 
-    setSelectedIdTodos(toggleAllTodos.map(todo => todo.id));
-    setIsLoading(true);
+      return;
+    }
 
-    toggleAllTodos.map(todo => {
-      updateTodos(todo)
-        .then(() => {
-          setTodos(toggleAllTodos);
-        })
-        .catch(() => {
-          setErrorMessage('Unable to toggle all items');
-          setTimeout(() => setErrorMessage(''), 3000);
-        })
-        .finally(() => {
-          setSelectedIdTodos([]);
-          setIsLoading(false);
-        });
+    todos.forEach(todo => {
+      if (!todo.completed) {
+        const updatedTodo = { ...todo, completed: true };
+
+        updateTodos(updatedTodo)
+          .then(() => {
+            setTodos(prevTodos =>
+              prevTodos.map(t => (t.id === updatedTodo.id ? updatedTodo : t)),
+            );
+          })
+          .catch(() => {
+            setErrorMessage('Unable to toggle all items');
+            setTimeout(() => setErrorMessage(''), 3000);
+          });
+      }
     });
   };
 
@@ -166,14 +178,12 @@ export const App: React.FC = () => {
           setTodos(prevTodos =>
             prevTodos.map(todo => (todo.id === id ? updatedTodo : todo)),
           );
-          setIsLoading(true);
         })
         .catch(() => {
           setErrorMessage('Unable to edit item');
           setTimeout(() => setErrorMessage(''), 3000);
         })
         .finally(() => {
-          setIsLoading(false);
           setSelectedIdTodos([]);
         });
     }
@@ -196,7 +206,6 @@ export const App: React.FC = () => {
           })
           .finally(() => {
             setIsSubmitting(false);
-            setIsLoading(false);
           });
       }
     });
@@ -205,7 +214,6 @@ export const App: React.FC = () => {
   const handleDelete = async (id: number) => {
     if (id) {
       setTodoId(id);
-      setIsLoading(true);
       setIsSubmitting(true);
     }
 
@@ -219,7 +227,6 @@ export const App: React.FC = () => {
       })
       .finally(() => {
         setIsSubmitting(false);
-        setIsLoading(false);
       });
   };
 
@@ -233,7 +240,7 @@ export const App: React.FC = () => {
   };
 
   return (
-    <div className="todoapp">
+    <div className={cn('todoapp', { 'has-error': errorMessage })}>
       <h1 className="todoapp__title">todos</h1>
 
       <div className="todoapp__content">
@@ -277,12 +284,10 @@ export const App: React.FC = () => {
         )}
       </div>
 
-      {!isLoading && (
-        <ErrorComponent
-          errorMessage={errorMessage}
-          handleCleanButton={handleCleanButton}
-        />
-      )}
+      <ErrorComponent
+        errorMessage={errorMessage}
+        handleCleanButton={handleCleanButton}
+      />
     </div>
   );
 };
