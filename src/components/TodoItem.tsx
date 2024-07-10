@@ -27,11 +27,12 @@ export const TodoItem: React.FC<Props> = ({
 }) => {
   const [editTitle, setEditTitle] = useState(todoTitle);
   const [isEditing, setIsEditing] = useState(false);
+  const [hasError, setHasError] = useState(false);
 
   const id = currentTodos.find(currentId => currentId === todoId);
 
   const handleChange =
-    isSubmitting?.id === todoId || deletingTodo === todoId || id;
+    isSubmitting?.id === todoId || deletingTodo === todoId || id || hasError;
 
   const itemRef = useRef<HTMLInputElement>(null);
 
@@ -50,15 +51,29 @@ export const TodoItem: React.FC<Props> = ({
 
     if (trimmedTitle === todoTitle) {
       setIsEditing(false);
-    } else if (trimmedTitle) {
+
+      return;
+    }
+
+    if (trimmedTitle) {
       handleEdit(todoId, trimmedTitle)
         .then(() => setIsEditing(false))
-        .catch(() => setIsEditing(true));
+        .catch(() => {
+          setIsEditing(true);
+          itemRef.current?.focus();
+        });
     } else {
       deleteTodos(todoId)
         .then(() => setIsEditing(false))
-        .catch(() => setIsEditing(true));
+        .catch(() => {
+          setIsEditing(true);
+          itemRef.current?.focus();
+          setHasError(false);
+        })
+        .finally(() => setHasError(false));
     }
+
+    setIsEditing(false);
   }
 
   const handleKey = (event: React.FormEvent<HTMLFormElement>) => {
@@ -106,7 +121,7 @@ export const TodoItem: React.FC<Props> = ({
             ref={itemRef}
             onChange={event => setEditTitle(event.target.value)}
             onBlur={save}
-            onKeyDown={handleKeyDown}
+            onKeyUp={handleKeyDown}
           />
         </form>
       ) : (

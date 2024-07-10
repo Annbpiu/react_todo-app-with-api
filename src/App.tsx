@@ -183,7 +183,7 @@ export const App: React.FC = () => {
           prevTodos.map(todo => (todo.id === id ? updatedTodo : todo)),
         );
       } catch (error) {
-        setErrorMessage('Unable to edit item');
+        setErrorMessage('Unable to update a todo');
         setTimeout(() => setErrorMessage(''), 3000);
         throw error;
       } finally {
@@ -224,9 +224,10 @@ export const App: React.FC = () => {
       .then(() => {
         setTodos(stateTodo => stateTodo.filter(todo => todo.id !== id));
       })
-      .catch(() => {
+      .catch(error => {
         setErrorMessage('Unable to delete a todo');
         setTimeout(() => setErrorMessage(''), 3000);
+        throw error;
       })
       .finally(() => {
         setIsSubmitting(false);
