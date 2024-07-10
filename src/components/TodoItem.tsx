@@ -7,11 +7,11 @@ interface Props {
   todoTitle: string;
   isCompleted: boolean;
   handleTodoClick: (id: number) => void;
-  deleteTodos: (id: number) => void;
+  deleteTodos: (id: number) => Promise<void>;
   isSubmitting: Todo | null;
   deletingTodo: number;
   currentTodos: number[];
-  handleEdit: (id: number, newTitle: string) => void;
+  handleEdit: (id: number, newTitle: string) => Promise<void>;
 }
 
 export const TodoItem: React.FC<Props> = ({
@@ -39,35 +39,39 @@ export const TodoItem: React.FC<Props> = ({
     setIsEditing(true);
   };
 
-  const handleKey = (event: React.KeyboardEvent<HTMLInputElement>) => {
-    if (event.key === 'Escape') {
-      handleEdit(todoId, editTitle);
-
-      setIsEditing(false);
-    } else if (event.key === 'Enter') {
-      handleEdit(todoId, editTitle);
-
-      setIsEditing(false);
-    }
-  };
-
   useEffect(() => {
-    if (itemRef.current) {
+    if (itemRef.current !== null) {
       itemRef.current.focus();
     }
   }, [isEditing]);
 
   function save() {
-    const trimmetTitle = editTitle.trim();
+    const trimmedTitle = editTitle.trim();
 
-    if (trimmetTitle === todoTitle) {
+    if (trimmedTitle === todoTitle) {
       setIsEditing(false);
+    } else if (trimmedTitle) {
+      handleEdit(todoId, trimmedTitle)
+        .then(() => setIsEditing(false))
+        .catch(() => setIsEditing(true));
+    } else {
+      deleteTodos(todoId)
+        .then(() => setIsEditing(false))
+        .catch(() => setIsEditing(true));
     }
-
-    handleEdit(todoId, editTitle);
-
-    setIsEditing(false);
   }
+
+  const handleKey = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+
+    save();
+  };
+
+  const handleKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
+    if (event.key === 'Escape') {
+      save();
+    }
+  };
 
   return (
     <div
@@ -91,19 +95,18 @@ export const TodoItem: React.FC<Props> = ({
       </label>
 
       {isEditing ? (
-        <form action="">
+        <form onSubmit={handleKey}>
           <input
             data-cy="TodoTitleField"
             type="text"
             className="todo__title-field"
             placeholder="Empty todo will be deleted"
             id={`todo-${todoId}`}
-            defaultValue={todoTitle}
+            value={editTitle}
             ref={itemRef}
             onChange={event => setEditTitle(event.target.value)}
             onBlur={save}
-            onKeyUp={handleKey}
-            onKeyDown={handleKey}
+            onKeyDown={handleKeyDown}
           />
         </form>
       ) : (

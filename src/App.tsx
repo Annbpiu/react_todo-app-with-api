@@ -167,25 +167,28 @@ export const App: React.FC = () => {
     });
   };
 
-  const handleEdit = (id: number, newTitle: string) => {
+  const handleEdit = async (id: number, newTitle: string): Promise<void> => {
     const todoToUpdate = todos.find(todo => todo.id === id);
 
     setSelectedIdTodos(currentId => [...currentId, id]);
 
     if (todoToUpdate) {
-      updateTodos({ ...todoToUpdate, title: newTitle })
-        .then(updatedTodo => {
-          setTodos(prevTodos =>
-            prevTodos.map(todo => (todo.id === id ? updatedTodo : todo)),
-          );
-        })
-        .catch(() => {
-          setErrorMessage('Unable to edit item');
-          setTimeout(() => setErrorMessage(''), 3000);
-        })
-        .finally(() => {
-          setSelectedIdTodos([]);
+      try {
+        const updatedTodo = await updateTodos({
+          ...todoToUpdate,
+          title: newTitle,
         });
+
+        setTodos(prevTodos =>
+          prevTodos.map(todo => (todo.id === id ? updatedTodo : todo)),
+        );
+      } catch (error) {
+        setErrorMessage('Unable to edit item');
+        setTimeout(() => setErrorMessage(''), 3000);
+        throw error;
+      } finally {
+        setSelectedIdTodos([]);
+      }
     }
   };
 
